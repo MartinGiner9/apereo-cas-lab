@@ -1,0 +1,35 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Generated CAS overlay
+cas-server/overlay/*
+!cas-server/overlay/.gitkeep
+
+# Gradle
+.gradle/
+**/build/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certificates and secrets
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
+*.pem
+*.crt
+secrets/
+
+# Logs
+*.log
+logs/
