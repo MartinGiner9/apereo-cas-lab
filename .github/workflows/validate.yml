@@ -1,0 +1,66 @@
+name: Validate repository
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare local environment
+        run: cp .env.example .env
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+      - name: Validate shell script syntax
+        run: bash -n scripts/bootstrap-cas.sh
+
+      - name: Validate registered-service JSON
+        run: jq empty cas-server/services/*.json
+
+      - name: Start PostgreSQL
+        run: docker compose up -d postgres
+
+      - name: Wait for PostgreSQL
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            if docker compose exec -T postgres pg_isready -U cas -d cas; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs postgres
+          exit 1
+
+      - name: Validate identity fixtures
+        run: |
+          docker compose exec -T postgres psql -U cas -d cas -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT username, enabled FROM cas_user ORDER BY username;
+          SELECT r.name, COUNT(*) AS users
+          FROM cas_role r
+          LEFT JOIN cas_user_role ur ON ur.role_id = r.id
+          GROUP BY r.name
+          ORDER BY r.name;
+          DO $$
+          BEGIN
+            IF EXISTS (SELECT 1 FROM cas_user WHERE password_hash NOT LIKE '$2%') THEN
+              RAISE EXCEPTION 'Expected all demo passwords to be stored as BCrypt hashes';
+            END IF;
+          END
+          $$;
+          SQL
+
+      - name: Stop infrastructure
+        if: always()
+        run: docker compose down -v
