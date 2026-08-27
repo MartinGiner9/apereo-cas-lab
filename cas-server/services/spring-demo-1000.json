@@ -1,0 +1,8 @@
+{
+  "@class": "org.apereo.cas.services.CasRegisteredService",
+  "serviceId": "^https://localhost:8444/.*",
+  "name": "Spring Boot Demo",
+  "description": "Local Spring Boot client used to demonstrate the CAS protocol and SSO.",
+  "id": 1000,
+  "evaluationOrder": 10
+}
